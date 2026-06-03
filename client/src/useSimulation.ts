@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { socket } from './socket';
-import type { ConnStatus, GraphSpec, SimSnapshot } from './types';
+import type { ConnStatus, EditGraph, GraphSpec, SimSnapshot } from './types';
 
 /**
  * Owns the live link to the engine: connection status, the latest snapshot, the
@@ -49,6 +49,7 @@ export function useSimulation() {
     resume: () => socket.emit('sim:resume'),
     reset: () => socket.emit('sim:reset'),
     setScenario: (name: string) => socket.emit('sim:scenario', name),
+    runCustom: (graph: EditGraph) => socket.emit('sim:custom', graph),
   };
 
   return { status, snapshot, graph, controls };

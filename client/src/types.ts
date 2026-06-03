@@ -47,12 +47,32 @@ export interface SimSnapshot {
   flows: Flow[];
 }
 
+export interface ComponentSpec {
+  id: string;
+  type: ComponentType;
+  label?: string;
+  capacity?: number;
+  serviceTime?: number;
+  maxQueue?: number;
+  failureRate?: number;
+  rate?: number;
+  hitRate?: number;
+}
+
+export interface Edge {
+  id: string;
+  from: string;
+  to: string;
+}
+
+export interface EditGraph {
+  components: ComponentSpec[];
+  edges: Edge[];
+}
+
 export interface GraphSpec {
   available: string[];
-  scenario: {
-    components: { id: string; type: ComponentType; label?: string }[];
-    edges: { id: string; from: string; to: string }[];
-  };
+  scenario: EditGraph;
 }
 
 export type ConnStatus = 'connecting' | 'live' | 'reconnecting';

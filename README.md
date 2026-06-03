@@ -53,4 +53,6 @@ Then open <http://localhost:5173>.
 - [x] **Step 2** — discrete-event simulation engine (6 tests green)
 - [x] **Step 3** — live sim metrics streamed to a real-time dashboard
 - [x] **Step 4** — node-graph canvas: flowing particles, health glow, live latency chart
-- [ ] **Step 5** — component editor, browser-Worker fallback, tests, polish, deploy
+- [x] **Step 5a** — component editor: palette, connect-by-port, edit params, Apply & Run
+- [ ] **Step 5b** — browser Web-Worker offline fallback
+- [ ] **Step 5c** — deploy to a live public URL

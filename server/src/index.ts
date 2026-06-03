@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { SimSession } from './sim/session.js';
+import { sanitizeScenario } from './sim/validate.js';
 import { scenarios } from './engine/scenarios.js';
 import type { Scenario } from './engine/types.js';
 
@@ -52,6 +53,15 @@ io.on('connection', (socket) => {
   });
   socket.on('sim:scenario', (name: unknown) => {
     const scenario = SCENARIOS[String(name)] ?? scenarios.webStack;
+    session.reset(scenario);
+    sendGraph();
+  });
+  socket.on('sim:custom', (raw: unknown) => {
+    const scenario = sanitizeScenario(raw);
+    if (!scenario) {
+      socket.emit('sim:error', 'That architecture could not be run (needs at least one component).');
+      return;
+    }
     session.reset(scenario);
     sendGraph();
   });
