@@ -1,0 +1,18 @@
+# Render Blueprint — one web service that builds the React client and runs the
+# engine, which serves the client over the same origin (WebSockets included).
+# Deploy: Render dashboard → New + → Blueprint → pick the flowforge repo.
+services:
+  - type: web
+    name: flowforge
+    runtime: node
+    plan: free
+    # --include=dev forces devDependencies (vite, tsc, tsx) to install — Render
+    # otherwise omits them under NODE_ENV=production, breaking the build/start.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.18.0
+      - key: NODE_ENV
+        value: production

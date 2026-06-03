@@ -47,6 +47,24 @@ Then open <http://localhost:5173>.
 | `npm run typecheck` | type-check both workspaces |
 | `npm test` | run the engine's unit tests |
 
+## Deploy
+
+FlowForge is a **single deployment**: the engine server also serves the built
+React app, so the canvas and the WebSocket engine share one origin.
+
+**Render (one-click Blueprint):**
+1. Push this repo to GitHub.
+2. Render dashboard → **New +** → **Blueprint** → pick the `flowforge` repo.
+3. Render reads [`render.yaml`](render.yaml), builds, and deploys. Done.
+
+**Any Docker host (Railway / Fly / HF Spaces):** use the included
+[`Dockerfile`](Dockerfile) — it builds the client and runs the engine on `$PORT`.
+
+```bash
+docker build -t flowforge . && docker run -p 3001:3001 flowforge
+# → http://localhost:3001
+```
+
 ## Build status
 
 - [x] **Step 1** — monorepo skeleton + live WebSocket pipe

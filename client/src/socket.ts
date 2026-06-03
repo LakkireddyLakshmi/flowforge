@@ -1,7 +1,10 @@
 import { io, type Socket } from 'socket.io-client';
 
-// The engine's address. Override in production with a VITE_ENGINE_URL env var.
-const ENGINE_URL = import.meta.env.VITE_ENGINE_URL ?? 'http://localhost:3001';
+// In dev, the engine runs on its own port. In production it's served from the
+// same origin as this page, so we connect with no explicit URL (same-origin).
+// A VITE_ENGINE_URL env var overrides both if you host them separately.
+const ENGINE_URL =
+  import.meta.env.VITE_ENGINE_URL ?? (import.meta.env.DEV ? 'http://localhost:3001' : undefined);
 
 export const socket: Socket = io(ENGINE_URL, {
   autoConnect: true,

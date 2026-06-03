@@ -2,16 +2,22 @@ import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import { SimSession } from './sim/session.js';
 import { sanitizeScenario } from './sim/validate.js';
 import { scenarios } from './engine/scenarios.js';
 import type { Scenario } from './engine/types.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+const PROD = process.env.NODE_ENV === 'production';
+// In production the client is served from this same origin, so reflect the
+// request origin; in dev, allow the Vite dev server explicitly.
+const ORIGIN: string | boolean = process.env.CLIENT_ORIGIN ?? (PROD ? true : 'http://localhost:5173');
 
 const app = express();
-app.use(cors({ origin: CLIENT_ORIGIN }));
+app.use(cors({ origin: ORIGIN }));
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
@@ -19,7 +25,7 @@ app.get('/health', (_req, res) => {
 });
 
 const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: CLIENT_ORIGIN } });
+const io = new Server(httpServer, { cors: { origin: ORIGIN } });
 
 const SCENARIOS: Record<string, Scenario> = scenarios;
 
@@ -72,7 +78,20 @@ io.on('connection', (socket) => {
   });
 });
 
+// In production, serve the built React app from this same server (single
+// deployment: one origin for both the canvas and the engine).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.resolve(__dirname, '../../client/dist');
+if (existsSync(path.join(clientDist, 'index.html'))) {
+  app.use(express.static(clientDist));
+  app.get('*', (_req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+}
+
 httpServer.listen(PORT, () => {
   console.log(`\n  ⚡ FlowForge engine online  →  http://localhost:${PORT}`);
-  console.log(`     accepting canvas from    →  ${CLIENT_ORIGIN}\n`);
+  console.log(`     mode                     →  ${PROD ? 'production' : 'development'}`);
+  if (existsSync(path.join(clientDist, 'index.html'))) {
+    console.log(`     serving canvas from      →  ${clientDist}`);
+  }
+  console.log('');
 });
