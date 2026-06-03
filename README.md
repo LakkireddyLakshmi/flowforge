@@ -50,7 +50,7 @@ Then open <http://localhost:5173>.
 ## Build status
 
 - [x] **Step 1** — monorepo skeleton + live WebSocket pipe
-- [ ] **Step 2** — discrete-event simulation engine
-- [ ] **Step 3** — stream live sim metrics to the canvas
+- [x] **Step 2** — discrete-event simulation engine (6 tests green)
+- [x] **Step 3** — live sim metrics streamed to a real-time dashboard
 - [ ] **Step 4** — drag/drop canvas, edges, Play + load slider, live charts
 - [ ] **Step 5** — tests, polish, deploy

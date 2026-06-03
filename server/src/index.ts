@@ -2,6 +2,9 @@ import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import { SimSession } from './sim/session.js';
+import { scenarios } from './engine/scenarios.js';
+import type { Scenario } from './engine/types.js';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
@@ -10,38 +13,52 @@ const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 
-// Plain HTTP health check — handy for deploy platforms and quick "is it up?" tests.
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'flowforge-engine', version: '0.1.0' });
 });
 
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: { origin: CLIENT_ORIGIN },
-});
+const io = new Server(httpServer, { cors: { origin: CLIENT_ORIGIN } });
+
+const SCENARIOS: Record<string, Scenario> = scenarios;
 
 io.on('connection', (socket) => {
-  console.log(`[socket] client connected: ${socket.id}`);
+  console.log(`[socket] connected: ${socket.id}`);
 
-  // STEP 1 PLACEHOLDER -----------------------------------------------------
-  // A once-a-second heartbeat that proves the live pipe (canvas <-> engine)
-  // works. In Step 3 this is replaced by real simulation metrics streamed
-  // from the discrete-event engine we build in Step 2.
-  let tick = 0;
-  const heartbeat = setInterval(() => {
-    tick += 1;
-    socket.emit('engine:heartbeat', {
-      tick,
-      // a gentle sine wave so the UI has something alive to render
-      load: Math.round(50 + 45 * Math.sin(tick / 5)),
-      at: tick * 1000,
+  // Each browser gets its own private simulation, auto-started on the web stack.
+  const session = new SimSession(scenarios.webStack, (snap) => {
+    socket.emit('sim:snapshot', snap);
+  });
+
+  // Tell the client which architectures exist and what's currently running, so
+  // it can draw the graph (Step 4) and render metrics against it.
+  const sendGraph = () => {
+    socket.emit('sim:graph', {
+      available: Object.keys(SCENARIOS),
+      scenario: session.getScenario(),
     });
-  }, 1000);
-  // ------------------------------------------------------------------------
+  };
+
+  session.start();
+  sendGraph();
+
+  socket.on('sim:load', (m: unknown) => session.setLoad(Number(m) || 0));
+  socket.on('sim:speed', (s: unknown) => session.setSpeed(Number(s) || 1));
+  socket.on('sim:pause', () => session.pause());
+  socket.on('sim:resume', () => session.resume());
+  socket.on('sim:reset', () => {
+    session.reset();
+    sendGraph();
+  });
+  socket.on('sim:scenario', (name: unknown) => {
+    const scenario = SCENARIOS[String(name)] ?? scenarios.webStack;
+    session.reset(scenario);
+    sendGraph();
+  });
 
   socket.on('disconnect', () => {
-    clearInterval(heartbeat);
-    console.log(`[socket] client disconnected: ${socket.id}`);
+    session.stop();
+    console.log(`[socket] disconnected: ${socket.id}`);
   });
 });
 
